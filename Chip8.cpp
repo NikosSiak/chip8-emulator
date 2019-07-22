@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <fstream>
 #include "Chip8.hpp"
 
 Chip8::Chip8() {
@@ -33,14 +34,30 @@ Chip8::Chip8() {
     delay_timer = 0;
     soundTimer = 0;
 
-    std::fill_n(mem, 4096, 0);
+    std::fill_n(memory, 4096, 0);
     std::fill_n(V, 16, 0);
     std::fill_n(stack, 16, 0);
     std::fill_n(screen, 64 * 32, 0);
     std::fill_n(keys, 16, false);
 
     for (int i = 0; i < 80; i++){
-        mem[i] = chip8_fontset[i];
+        memory[i] = chip8_fontset[i];
     }
 }
 
+void Chip8::loadGame(const char *romPath) {
+    int fsize;
+
+    std::ifstream rom(romPath, std::ios::binary | std::ios::ate);
+    if (rom.fail()){
+        throw std::runtime_error("Error: file");
+    }
+
+    fsize = rom.tellg();
+    fsize += 0x200;
+    rom.seekg(0, std::ios::beg);
+
+    rom.read(reinterpret_cast<char *>(memory + 0x200), fsize);
+
+    rom.close();
+}

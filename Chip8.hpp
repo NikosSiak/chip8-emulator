@@ -7,7 +7,7 @@
 
 
 class Chip8 {
-    unsigned char mem[4096];
+    unsigned char memory[4096];
     unsigned char V[16];
     unsigned char screen[64 * 32];
     bool keys[16];
@@ -25,7 +25,7 @@ class Chip8 {
 
 public:
     Chip8();
-    bool loadGame(const char *romPath);
+    void loadGame(const char *romPath);
 };
 
 
