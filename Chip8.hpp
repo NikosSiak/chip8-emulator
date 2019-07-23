@@ -9,23 +9,27 @@
 class Chip8 {
     unsigned char memory[4096];
     unsigned char V[16];
-    unsigned char screen[64 * 32];
+    unsigned char pixels[64 * 32];
     bool keys[16];
 
     unsigned short pc;
     unsigned short I;
 
     unsigned char delay_timer;
-    unsigned char soundTimer;
+    unsigned char sound_timer;
 
     unsigned short stack[16];
-    unsigned short sp;
+    char sp;
 
     unsigned short opcode; //current opcode
+
+    bool decodeOpcode();
+    void playSound();
 
 public:
     Chip8();
     void loadGame(const char *romPath);
+    void emulate();
 };
 
 

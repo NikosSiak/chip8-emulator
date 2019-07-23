@@ -3,4 +3,4 @@ project(chip8)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(chip8 main.cpp Disassembler.cpp Disassembler.hpp Chip8.cpp Chip8.hpp)
+add_executable(chip8 main.cpp Chip8.cpp Chip8.hpp)
