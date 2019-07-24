@@ -40,6 +40,8 @@ Chip8::Chip8() {
     std::fill_n(pixels, 64 * 32, 0);
     std::fill_n(keys, 16, false);
 
+    display();
+
     for (int i = 0; i < 80; i++){
         memory[i] = chip8_fontset[i];
     }
@@ -85,6 +87,7 @@ bool Chip8::decodeOpcode() {
             switch (opcode & 0x00ff) {
                 case 0xe0: // Clear screen
                     std::fill_n(pixels, 64 * 32, 0);
+                    display();
                     break;
                 case 0xee: // Return from a subroutine
                     pc = stack[sp--];
@@ -117,7 +120,7 @@ bool Chip8::decodeOpcode() {
             break;
         }
         case 0x5000: { // 5XY0: Skips the next instruction if VX equals VY
-            if (V[(opcode & 0x0f00) >> 8] == V[(opcode & 0x0f00) >> 4]){
+            if (V[(opcode & 0x0f00) >> 8] == V[(opcode & 0x00f0) >> 4]){
                 pc += 2;
             }
             break;
@@ -131,11 +134,52 @@ bool Chip8::decodeOpcode() {
             break;
         }
         case 0x8000: {
-
+            switch (opcode & 0x000f) {
+                case 0x0000: { // 8XY0: Sets VX to the value of VY
+                    V[(opcode & 0x0f00) >> 8] = V[(opcode & 0x00f0) >> 4];
+                    break;
+                }
+                case 0x0001: { // 8XY1: Sets VX to VX or VY (Bitwise OR operation)
+                    V[(opcode & 0x0f00) >> 8] |= V[(opcode & 0x00f0) >> 4];
+                    break;
+                }
+                case 0x0002: { // 8XY2: Sets VX to VX and VY (Bitwise AND operation)
+                    V[(opcode & 0x0f00) >> 8] &= V[(opcode & 0x00f0) >> 4];
+                    break;
+                }
+                case 0x0003: { // 8XY3: Sets VX to VX xor VY
+                    V[(opcode & 0x0f00) >> 8] ^= V[(opcode & 0x00f0) >> 4];
+                    break;
+                }
+                case 0x0004: { // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+                    V[0xf] = (V[(opcode & 0x00f0) >> 4] > (0xff - V[(opcode & 0x0f00) >> 8])) ? 1 : 0;
+                    V[(opcode & 0x0f00) >> 8] += V[(opcode & 0x00f0) >> 4];
+                    break;
+                }
+                case 0x0005: { // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't
+                    V[0xf] = (V[(opcode & 0x0f00) >> 8] > (V[(opcode & 0x00f0) >> 4])) ? 1 : 0;
+                    V[(opcode & 0x0f00) >> 8] -= V[(opcode & 0x00f0) >> 4];
+                }
+                case 0x0006: { // 8XY6: Stores the least significant bit of VX in VF and then shifts VX to the right by 1
+                    V[0xf] = V[(opcode & 0x0f00) >> 8] & 1;
+                    V[(opcode & 0x0f00) >> 8] >>= 1;
+                    break;
+                }
+                case 0x0007: { // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't
+                    V[0xf] = (V[(opcode & 0x00f0) >> 4] > (V[(opcode & 0x0f00) >> 8])) ? 1 : 0;
+                    V[(opcode & 0x0f00) >> 8] = V[(opcode & 0x00f0) >> 4] - V[(opcode & 0x0f00) >> 8];
+                    break;
+                }
+                case 0x000e: { // 8XYE: Stores the most significant bit of VX in VF and then shifts VX to the left by 1
+                    V[0xf] = V[(opcode & 0x0f00) >> 8] >> 7;
+                    V[(opcode & 0x0f00) >> 8] <<= 1;
+                    break;
+                }
+            }
             break;
         }
         case 0x9000: { // 9XY0: Skips the next instruction if VX doesn't equal VY
-            if (V[(opcode & 0x0f00) >> 8] != V[(opcode & 0x0f00) >> 4]){
+            if (V[(opcode & 0x0f00) >> 8] != V[(opcode & 0x00f0) >> 4]){
                 pc += 2;
             }
             break;
@@ -149,7 +193,7 @@ bool Chip8::decodeOpcode() {
             break;
         }
         case 0xc000: { // CXNN: Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN
-
+            V[(opcode & 0x0f00) >> 8] = (rand() & 0x00ff) & (opcode & 0x00ff);
             break;
         }
         case 0xd000: { // DXYN: Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a
@@ -174,4 +218,8 @@ bool Chip8::decodeOpcode() {
 
 void Chip8::playSound() {
     printf("%c", 7);
+}
+
+void Chip8::display() {
+
 }

@@ -24,6 +24,7 @@ class Chip8 {
     unsigned short opcode; //current opcode
 
     bool decodeOpcode();
+    void display();
     void playSound();
 
 public:
