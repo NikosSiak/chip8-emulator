@@ -24,13 +24,18 @@ class Chip8 {
     unsigned short opcode; //current opcode
 
     bool decodeOpcode();
-    void display();
     void playSound();
 
 public:
+    bool isRunning = true;
+    bool drawFlag = false;
+    bool waitForKey = false;
+
     Chip8();
     void loadGame(const char *romPath);
-    void emulate();
+    bool emulate(int circles);
+    void keyPress(char key);
+    void keyRelease(char key);
 };
 
 

@@ -40,8 +40,6 @@ Chip8::Chip8() {
     std::fill_n(pixels, 64 * 32, 0);
     std::fill_n(keys, 16, false);
 
-    display();
-
     for (int i = 0; i < 80; i++){
         memory[i] = chip8_fontset[i];
     }
@@ -64,37 +62,62 @@ void Chip8::loadGame(const char *romPath) {
     rom.close();
 }
 
-void Chip8::emulate() {
-    opcode = memory[pc] << 8 | memory[pc + 1];
-    if (decodeOpcode()){
-        if(delay_timer > 0) {
-            delay_timer--;
-        }
-        if(sound_timer > 0) {
-            if(sound_timer == 1) {
-                playSound();
+bool Chip8::emulate(int circles) {
+    for (int i = 0; i < circles; i++) {
+        opcode = memory[pc] << 8 | memory[pc + 1];
+        if (decodeOpcode()) {
+            if (delay_timer > 0) {
+                delay_timer--;
             }
-            --sound_timer;
+            if (sound_timer > 0) {
+                if (sound_timer == 1) {
+                    playSound();
+                }
+                --sound_timer;
+            }
+            if (isRunning) { // might end up in endless loop
+                pc += 2; // TODO: check if pc is > than 4095
+            }
         }
-        pc += 2; // TODO: check if pc is > than 4095
+        else {
+            return false;
+        }
     }
+    return true;
 
+}
+
+void Chip8::keyPress(char key) {
+    if (waitForKey) { // if waitForKey is true it means that the opcode is FX0A
+        waitForKey = false;
+        isRunning = true;
+
+        V[(opcode & 0x0f00) >> 8] = key;
+    }
+    keys[key] = true;
+}
+
+void Chip8::keyRelease(char key) {
+    keys[key] = false;
 }
 
 bool Chip8::decodeOpcode() {
     switch (opcode & 0xf000){
         case 0x0000: {
             switch (opcode & 0x00ff) {
-                case 0xe0: // Clear screen
+                case 0xe0: { // Clear screen
                     std::fill_n(pixels, 64 * 32, 0);
-                    display();
+                    drawFlag = true;
                     break;
-                case 0xee: // Return from a subroutine
+                }
+                case 0xee: { // Return from a subroutine
                     pc = stack[sp--];
                     break;
-                default:
+                }
+                default: {
                     printf("Unknown opcode %04x at %04x\n", opcode, pc);
                     break;
+                }
             }
             break;
         }
@@ -175,6 +198,10 @@ bool Chip8::decodeOpcode() {
                     V[(opcode & 0x0f00) >> 8] <<= 1;
                     break;
                 }
+                default: {
+                    printf("Unknown opcode %04x at %04x\n", opcode, pc);
+                    break;
+                }
             }
             break;
         }
@@ -197,19 +224,117 @@ bool Chip8::decodeOpcode() {
             break;
         }
         case 0xd000: { // DXYN: Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a
-                       // height of N pixels. Each row of 8 pixels is read as bit-coded starting from memory
-                       // location I; I value doesn’t change after the execution of this instruction. As described
-                       // above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is
-                       // drawn, and to 0 if that doesn’t happen
+            // height of N pixels. Each row of 8 pixels is read as bit-coded starting from memory
+            // location I; I value doesn’t change after the execution of this instruction. As described
+            // above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is
+            // drawn, and to 0 if that doesn’t happen
+            unsigned char VX = V[(opcode & 0x0f00) >> 8];
+            unsigned char VY = V[(opcode & 0x00f0) >> 4];
+            unsigned short height = opcode & 0x000f;
+            unsigned short pixel;
 
+            V[0xf] = 0;
+            for (int yline = 0; yline < height; yline++) {
+                pixel = memory[I + yline];
+                for (int xline = 0; xline < 8; xline++) {
+                    if ((pixel & (0x80 >> xline)) != 0) {
+                        if (pixels[(VX + xline + ((VY + yline) * 64))] == 1) {
+                            V[0xF] = 1;
+                        }
+                        pixels[VX + xline + ((VY + yline) * 64)] ^= 1;
+                    }
+                }
+            }
             break;
         }
         case 0xe000: {
-
+            switch (opcode & 0x00ff) {
+                case 0x009e: { // EX9E: Skips the next instruction if the key stored in VX is pressed
+                    if (keys[V[(opcode & 0x0f00) >> 8]]){
+                        pc += 2;
+                    }
+                    break;
+                }
+                case 0x00a1: { // EXA1: Skips the next instruction if the key stored in VX isn't pressed
+                    if (!keys[V[(opcode & 0x0f00) >> 8]]){
+                        pc += 2;
+                    }
+                    break;
+                }
+                default: {
+                    printf("Unknown opcode %04x at %04x\n", opcode, pc);
+                    break;
+                }
+            }
             break;
         }
         case 0xf000: {
-
+            switch (opcode & 0x00ff) {
+                case 0x0007: { // FX07: Sets VX to the value of the delay timer
+                    V[(opcode & 0x0f00) >> 8] = delay_timer;
+                    break;
+                }
+                case 0x000a: { // FX0A: A key press is awaited, and then stored in VX
+                    waitForKey = true;
+                    isRunning = false;
+                    break;
+                }
+                case 0x0015: { // FX15: Sets the delay timer to VX
+                    delay_timer = V[(opcode & 0x0f00) >> 8];
+                    break;
+                }
+                case 0x0018: { // FX18: Sets the sound timer to VX
+                    sound_timer = V[(opcode & 0x0f00) >> 8];
+                    break;
+                }
+                case 0x001e: { // FX1E: Adds VX to I. VF is set to 1 when there is a range overflow
+                    if (I > (0xfff - V[(opcode & 0x0f00) >> 8])){
+                        V[0xf] = 1;
+                    }
+                    else {
+                        V[0xf] = 0;
+                    }
+                    I += V[(opcode & 0x0f00) >> 8];
+                    break;
+                }
+                case 0x0029: { // FX29: Sets I to the location of the sprite for the character in VX. Characters 0-F
+                    // (in hexadecimal) are represented by a 4x5 font
+                    I = V[(opcode & 0x0f00) >> 8] * 5;
+                    break;
+                }
+                case 0x0033: { // FX33: Take the decimal representation of VX, place the hundreds digit in
+                    // memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
+                    unsigned char X = (opcode & 0x0f00) >> 8;
+                    memory[I] = V[X] / 100;
+                    memory[I+1] = (V[X] % 100) / 10;
+                    memory[I+2] = V[X] % 10;
+                    break;
+                }
+                case 0x0055: { // FX55: Stores V0 to VX (including VX) in memory starting at address I. The offset from
+                    // I is increased by 1 for each value written, but I itself is left unmodified
+                    auto X = (opcode & 0x0f00) >> 8;
+                    for (auto i = 0; i <= X; i++){
+                        memory[I + i] = V[X];
+                    }
+                    break;
+                }
+                case 0x0065: { // FX65: Fills V0 to VX (including VX) with values from memory starting at address I.
+                    // The offset from I is increased by 1 for each value written, but I itself is left unmodified
+                    auto X = (opcode & 0x0f00) >> 8;
+                    for (auto i = 0; i <= X; i++){
+                        V[i] = memory[I + i];
+                    }
+                    break;
+                }
+                default: {
+                    printf("Unknown opcode %04x at %04x\n", opcode, pc);
+                    break;
+                }
+            }
+            break;
+        }
+        default: {
+            printf("Unknown opcode %04x at %04x\n", opcode, pc);
             break;
         }
     }
@@ -218,8 +343,4 @@ bool Chip8::decodeOpcode() {
 
 void Chip8::playSound() {
     printf("%c", 7);
-}
-
-void Chip8::display() {
-
 }
