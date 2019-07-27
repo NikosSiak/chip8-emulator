@@ -44,7 +44,6 @@ Chip8::Chip8() {
         memory[i] = chip8_fontset[i];
     }
 
-    drawFlag = false;
     isRunning = true;
     waitForKey = false;
 
@@ -123,7 +122,6 @@ bool Chip8::decodeOpcode() {
             switch (opcode & 0x00ff) {
                 case 0xe0: { // Clear screen
                     std::fill_n(pixels, 64 * 32, 0);
-                    drawFlag = true;
                     break;
                 }
                 case 0xee: { // Return from a subroutine
@@ -261,7 +259,6 @@ bool Chip8::decodeOpcode() {
                     }
                 }
             }
-            drawFlag = true;
             break;
         }
         case 0xe000: {

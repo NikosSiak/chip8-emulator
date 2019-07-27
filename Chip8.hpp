@@ -28,7 +28,6 @@ class Chip8 {
 
 public:
     bool isRunning;
-    bool drawFlag;
     bool waitForKey;
 
     Chip8();

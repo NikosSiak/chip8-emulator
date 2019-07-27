@@ -87,16 +87,15 @@ int main(int argc, char *argv[]) {
             exit(3);
         }
 
-        if (chip.drawFlag) {
-            sf::RectangleShape pixel;
-            window.clear();
-            for (int i = 0; i < 64 * 32; i++){
-                pixel.setFillColor(chip.getPixel(i) ? fgColor : bgColor);
-                pixel.setPosition(i % 64 * RES_MULT, i / 64 * RES_MULT);
-                pixel.setSize(sf::Vector2f(RES_MULT, RES_MULT));
-                window.draw(pixel);
-            }
+        sf::RectangleShape pixel;
+        window.clear();
+        for (int i = 0; i < 64 * 32; i++) {
+            pixel.setFillColor(chip.getPixel(i) ? fgColor : bgColor);
+            pixel.setPosition(i % 64 * RES_MULT, i / 64 * RES_MULT);
+            pixel.setSize(sf::Vector2f(RES_MULT, RES_MULT));
+            window.draw(pixel);
         }
+
         window.display();
     }
 
