@@ -27,15 +27,16 @@ class Chip8 {
     void playSound();
 
 public:
-    bool isRunning = true;
-    bool drawFlag = false;
-    bool waitForKey = false;
+    bool isRunning;
+    bool drawFlag;
+    bool waitForKey;
 
     Chip8();
     void loadGame(const char *romPath);
     bool emulate(int circles);
     void keyPress(char key);
     void keyRelease(char key);
+    unsigned char getPixel(int i);
 };
 
 

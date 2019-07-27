@@ -43,6 +43,11 @@ Chip8::Chip8() {
     for (int i = 0; i < 80; i++){
         memory[i] = chip8_fontset[i];
     }
+
+    drawFlag = false;
+    isRunning = true;
+    waitForKey = false;
+
 }
 
 void Chip8::loadGame(const char *romPath) {
@@ -77,6 +82,9 @@ bool Chip8::emulate(int circles) {
             }
             if (isRunning) { // might end up in endless loop
                 pc += 2; // TODO: check if pc is > than 4095
+                if (pc > 0xfff){
+                    return false; // TODO: fix
+                }
             }
         }
         else {
@@ -101,6 +109,14 @@ void Chip8::keyRelease(char key) {
     keys[key] = false;
 }
 
+void Chip8::playSound() {
+    printf("%c", 7);
+}
+
+unsigned char Chip8::getPixel(int i) {
+    return pixels[i];
+}
+
 bool Chip8::decodeOpcode() {
     switch (opcode & 0xf000){
         case 0x0000: {
@@ -115,19 +131,18 @@ bool Chip8::decodeOpcode() {
                     break;
                 }
                 default: {
-                    printf("Unknown opcode %04x at %04x\n", opcode, pc);
                     break;
                 }
             }
             break;
         }
         case 0x1000: { // 1NNN: Jumps to address NNN
-            pc = opcode & 0x0fff;
+            pc = (opcode & 0x0fff) - 2;
             break;
         }
         case 0x2000: { // 2NNN: Calls subroutine at NNN
             stack[++sp] = pc; // TODO: check if sp is out of bounds
-            pc = opcode & 0x0fff;
+            pc = (opcode & 0x0fff) - 2;
             break;
         }
         case 0x3000: { // 3XNN: Skips the next instruction if VX equals NN
@@ -182,6 +197,7 @@ bool Chip8::decodeOpcode() {
                 case 0x0005: { // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't
                     V[0xf] = (V[(opcode & 0x0f00) >> 8] > (V[(opcode & 0x00f0) >> 4])) ? 1 : 0;
                     V[(opcode & 0x0f00) >> 8] -= V[(opcode & 0x00f0) >> 4];
+                    break;
                 }
                 case 0x0006: { // 8XY6: Stores the least significant bit of VX in VF and then shifts VX to the right by 1
                     V[0xf] = V[(opcode & 0x0f00) >> 8] & 1;
@@ -199,7 +215,7 @@ bool Chip8::decodeOpcode() {
                     break;
                 }
                 default: {
-                    printf("Unknown opcode %04x at %04x\n", opcode, pc);
+
                     break;
                 }
             }
@@ -216,7 +232,7 @@ bool Chip8::decodeOpcode() {
             break;
         }
         case 0xb000: { // BNNN: Jumps to the address NNN plus V0
-            pc = V[0] + (opcode & 0x0fff);
+            pc = V[0] + (opcode & 0x0fff) - 2;
             break;
         }
         case 0xc000: { // CXNN: Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN
@@ -245,6 +261,7 @@ bool Chip8::decodeOpcode() {
                     }
                 }
             }
+            drawFlag = true;
             break;
         }
         case 0xe000: {
@@ -253,16 +270,18 @@ bool Chip8::decodeOpcode() {
                     if (keys[V[(opcode & 0x0f00) >> 8]]){
                         pc += 2;
                     }
+
                     break;
                 }
                 case 0x00a1: { // EXA1: Skips the next instruction if the key stored in VX isn't pressed
                     if (!keys[V[(opcode & 0x0f00) >> 8]]){
                         pc += 2;
                     }
+
                     break;
                 }
                 default: {
-                    printf("Unknown opcode %04x at %04x\n", opcode, pc);
+
                     break;
                 }
             }
@@ -327,20 +346,17 @@ bool Chip8::decodeOpcode() {
                     break;
                 }
                 default: {
-                    printf("Unknown opcode %04x at %04x\n", opcode, pc);
+
                     break;
                 }
             }
             break;
         }
         default: {
-            printf("Unknown opcode %04x at %04x\n", opcode, pc);
+
             break;
         }
     }
     return true;
 }
 
-void Chip8::playSound() {
-    printf("%c", 7);
-}
