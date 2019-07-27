@@ -7,12 +7,8 @@
 int main(int argc, char *argv[]) {
     srand(static_cast<unsigned int>(time(nullptr)));
 
-    // disable antialiasing for the font
-    sf::ContextSettings settings;
-    settings.antialiasingLevel = 0;
-
-    sf::RenderWindow window(sf::VideoMode(64 * 10, 32 * 10), "Chip8 Emulator",
-            sf::Style::Titlebar | sf::Style::Close, settings);
+    sf::RenderWindow window(sf::VideoMode(64 * 12, 32 * 12), "Chip8 Emulator",
+            sf::Style::Titlebar | sf::Style::Close);
 
     sf::Color bgColor(sf::Color::Black);
     sf::Color fgColor(sf::Color::White);
