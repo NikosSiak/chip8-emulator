@@ -14,12 +14,6 @@ int main(int argc, char *argv[]) {
     sf::RenderWindow window(sf::VideoMode(64 * 10, 32 * 10), "Chip8 Emulator",
             sf::Style::Titlebar | sf::Style::Close, settings);
 
-//    sf::Font font;
-//    if (!font.loadFromFile("../resources/Minecraftia-Regular.ttf")){
-//        window.close();
-//        exit(1);
-//    }
-
     sf::Color bgColor(sf::Color::Black);
     sf::Color fgColor(sf::Color::White);
 
