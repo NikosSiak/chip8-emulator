@@ -4,10 +4,13 @@
 #include <SFML/Graphics.hpp>
 
 
+#define RES_MULT 20
+
+
 int main(int argc, char *argv[]) {
     srand(static_cast<unsigned int>(time(nullptr)));
 
-    sf::RenderWindow window(sf::VideoMode(64 * 12, 32 * 12), "Chip8 Emulator",
+    sf::RenderWindow window(sf::VideoMode(64 * RES_MULT, 32 * RES_MULT), "Chip8 Emulator",
             sf::Style::Titlebar | sf::Style::Close);
 
     sf::Color bgColor(sf::Color::Black);
@@ -89,8 +92,8 @@ int main(int argc, char *argv[]) {
             window.clear();
             for (int i = 0; i < 64 * 32; i++){
                 pixel.setFillColor(chip.getPixel(i) ? fgColor : bgColor);
-                pixel.setPosition(i % 64 * 12, i / 64 * 12);
-                pixel.setSize(sf::Vector2f(12, 12));
+                pixel.setPosition(i % 64 * RES_MULT, i / 64 * RES_MULT);
+                pixel.setSize(sf::Vector2f(RES_MULT, RES_MULT));
                 window.draw(pixel);
             }
         }
