@@ -58,7 +58,6 @@ void Chip8::loadGame(const char *romPath) {
     }
 
     fsize = rom.tellg();
-    fsize += 0x200;
     rom.seekg(0, std::ios::beg);
 
     rom.read(reinterpret_cast<char *>(memory + 0x200), fsize);
