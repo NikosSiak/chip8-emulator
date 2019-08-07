@@ -1,5 +1,12 @@
 # A Chip-8 emulator in C++ using SFML.
 
+## Compile in linux
+```
+sudo apt-get install libsfml-dev
+g++ -c /path/to/main.cpp /path/to/Chip8.cpp
+g++ main.o Chip8.o -o chip8 -lsfml-graphics -lsfml-window -lsfml-system
+```
+
 ## Usage
 `./chip8 path/to/rom`
 
