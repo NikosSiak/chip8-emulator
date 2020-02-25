@@ -329,7 +329,7 @@ bool Chip8::decodeOpcode() {
                     // I is increased by 1 for each value written, but I itself is left unmodified
                     auto X = (opcode & 0x0f00) >> 8;
                     for (auto i = 0; i <= X; i++){
-                        memory[I + i] = V[X];
+                        memory[I + i] = V[i];
                     }
                     break;
                 }
